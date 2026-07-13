@@ -1,6 +1,8 @@
-# YouTube Speed Profiles
+# ytctl
 
-A desktop Firefox extension for controlling YouTube playback speed with hotkeys, user-created profiles, and per-creator rules.
+**Better controls for YouTube.**
+
+The first ytctl feature is flexible playback-speed control with hotkeys, user-created profiles, and per-creator rules.
 
 ## Features
 

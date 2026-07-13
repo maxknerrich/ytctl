@@ -384,7 +384,7 @@
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = `youtube-speed-profiles-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.download = `ytctl-${new Date().toISOString().slice(0, 10)}.json`;
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     showStatus("Settings exported.");
@@ -399,7 +399,7 @@
     try {
       const raw = JSON.parse(await file.text());
       if (!raw || typeof raw !== "object" || raw.version !== 1 || !Array.isArray(raw.profiles) || !raw.assignments || typeof raw.assignments !== "object") {
-        throw new Error("This is not a valid YouTube Speed Profiles backup.");
+        throw new Error("This is not a valid ytctl backup.");
       }
       const imported = YTSpeed.normalize(raw);
       if (elements.importMode.value === "replace") {

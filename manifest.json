@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YouTube Speed Profiles",
+  "name": "ytctl",
   "version": "1.0.0",
-  "description": "Control YouTube playback speed with hotkeys, profiles, and per-creator rules.",
+  "description": "Better controls for YouTube, starting with playback-speed hotkeys, profiles, and per-creator rules.",
   "permissions": ["storage", "tabs"],
   "host_permissions": [
     "*://youtube.com/*",
@@ -50,7 +50,7 @@
     "profile9": { "suggested_key": { "default": "Alt+Shift+9" }, "description": "Activate profile slot 9" }
   },
   "action": {
-    "default_title": "YouTube Speed Profiles",
+    "default_title": "ytctl",
     "default_popup": "popup.html",
     "default_icon": "icons/icon.svg"
   },
@@ -64,7 +64,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "youtube-speed-profiles@local",
+      "id": "ytctl@maxknerrich",
       "strict_min_version": "115.0"
     }
   }
