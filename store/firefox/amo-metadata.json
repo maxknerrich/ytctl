@@ -16,6 +16,7 @@
     "en-US": "https://github.com/maxknerrich/ytctl"
   },
   "requires_payment": false,
+  "tags": ["streaming", "youtube"],
   "version": {
     "license": "MIT",
     "release_notes": {

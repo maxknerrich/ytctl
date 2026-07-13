@@ -84,9 +84,17 @@ The manually triggered **Publish Firefox** workflow validates and submits the ex
 - `AMO_JWT_ISSUER`
 - `AMO_JWT_SECRET`
 
-Create the credentials at [addons.mozilla.org/developers/addon/api/key](https://addons.mozilla.org/developers/addon/api/key/). Then open **Actions → Publish Firefox → Run workflow**. Leave **Submit to AMO** disabled for a dry run that tests, packages, lints, and uploads the artifact without publishing. Enable it and select the `listed` channel when ready to submit. The initial listing metadata is stored in `store/firefox/amo-metadata.json`.
+Create the credentials at [addons.mozilla.org/developers/addon/api/key](https://addons.mozilla.org/developers/addon/api/key/). The initial listing metadata is stored in `store/firefox/amo-metadata.json`.
 
-Mozilla reviews listed submissions before publication. Subsequent submissions must use a new version generated through Changesets.
+Normal releases use the Changesets version PR:
+
+1. User-facing pull requests include a changeset.
+2. After those pull requests merge, Changesets creates or updates the version PR.
+3. Merging the version PR changes `package.json`, which automatically submits that version to AMO and creates a matching GitHub release.
+
+The manually triggered **Publish Firefox** workflow remains available for dry runs and recovery. Leave **Submit to AMO** disabled to test, package, lint, and upload artifacts without publishing.
+
+Mozilla reviews listed submissions before publication. Direct pushes to `main` are blocked; all changes go through pull requests and CI.
 
 ## Default hotkeys
 

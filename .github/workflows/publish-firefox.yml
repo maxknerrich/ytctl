@@ -1,6 +1,9 @@
 name: Publish Firefox
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       publish:
@@ -18,7 +21,7 @@ on:
           - unlisted
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: publish-firefox
@@ -31,6 +34,8 @@ jobs:
     environment: amo
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -39,21 +44,59 @@ jobs:
       - run: npm test
       - run: npm run package
       - run: npm run lint:firefox
+      - name: Determine whether this merge is a release
+        id: release
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          MANUAL_PUBLISH: ${{ inputs.publish || false }}
+        run: |
+          publish=false
+          version="$(node -p "require('./package.json').version")"
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            [[ "$MANUAL_PUBLISH" == "true" ]] && publish=true
+          elif [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            previous_version="$(git show "$BEFORE_SHA:package.json" 2>/dev/null | node -e "let data=''; process.stdin.on('data', chunk => data += chunk); process.stdin.on('end', () => console.log(JSON.parse(data).version))" || true)"
+            [[ -n "$previous_version" && "$previous_version" != "$version" ]] && publish=true
+          fi
+
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Release version: $version; publish: $publish"
       - name: Submit extension to AMO
-        if: inputs.publish
+        if: steps.release.outputs.publish == 'true'
         run: |
           npx web-ext sign \
             --source-dir dist/firefox \
             --artifacts-dir web-ext-artifacts \
-            --channel "${{ inputs.channel }}" \
+            --channel "$AMO_CHANNEL" \
             --amo-metadata store/firefox/amo-metadata.json \
             --api-key "$AMO_JWT_ISSUER" \
             --api-secret "$AMO_JWT_SECRET" \
             --approval-timeout 0 \
             --no-input
         env:
+          AMO_CHANNEL: ${{ inputs.channel || 'listed' }}
           AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
           AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+      - name: Create GitHub release
+        if: steps.release.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          args=(
+            "v$VERSION"
+            "dist/ytctl-firefox-$VERSION.zip"
+            --repo "$GITHUB_REPOSITORY"
+            --target "$GITHUB_SHA"
+            --title "ytctl $VERSION"
+            --generate-notes
+          )
+          if [[ "$VERSION" == 0.* ]]; then
+            args+=(--prerelease)
+          fi
+          gh release create "${args[@]}"
       - name: Upload submission artifacts
         if: always()
         uses: actions/upload-artifact@v7
