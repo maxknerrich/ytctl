@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Speed Profiles — Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header class="page-header">
+      <div class="brand-mark" aria-hidden="true">▶</div>
+      <div>
+        <h1>YouTube Speed Profiles</h1>
+        <p>Defaults, profiles, hotkeys, and creator rules are stored locally in Firefox.</p>
+      </div>
+    </header>
+
+    <section>
+      <h2>Playback defaults</h2>
+      <p class="section-help">Used when a creator has no matching rule.</p>
+      <div class="form-grid">
+        <label>Regular videos
+          <span class="speed-input"><input id="default-video" type="number" min="0.25" max="4" step="0.05"> ×</span>
+        </label>
+        <label>Shorts
+          <span class="speed-input"><input id="default-shorts" type="number" min="0.25" max="4" step="0.05"> ×</span>
+        </label>
+        <label>Hotkey adjustment step
+          <select id="hotkey-step">
+            <option value="0.05">0.05×</option>
+            <option value="0.1">0.1×</option>
+            <option value="0.25">0.25×</option>
+            <option value="0.5">0.5×</option>
+          </select>
+        </label>
+      </div>
+      <button id="save-defaults" class="primary" type="button">Save defaults</button>
+    </section>
+
+    <section>
+      <h2>Profiles</h2>
+      <p class="section-help">Create as many profiles as you like. Slots 1–9 connect profiles to their profile hotkeys.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Speed</th><th>Hotkey slot</th><th><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody id="profiles-body"></tbody>
+        </table>
+      </div>
+      <form id="add-profile" class="add-row">
+        <input id="new-profile-name" required maxlength="60" placeholder="Profile name" aria-label="New profile name">
+        <span class="speed-input"><input id="new-profile-speed" required type="number" min="0.25" max="4" step="0.05" value="1.5" aria-label="New profile speed"> ×</span>
+        <select id="new-profile-slot" aria-label="New profile hotkey slot"></select>
+        <button class="primary" type="submit">Add profile</button>
+      </form>
+      <p id="profiles-empty" class="empty">No profiles yet.</p>
+    </section>
+
+    <section>
+      <h2>Hotkeys</h2>
+      <p class="section-help">Click a shortcut field, then press the new combination. Shortcuts do not fire while you are typing on YouTube.</p>
+      <div id="hotkey-list" class="hotkey-list"></div>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <div>
+          <h2>Creator rules</h2>
+          <p class="section-help">Rules appear here after you assign a creator from the toolbar popup.</p>
+        </div>
+        <input id="assignment-search" type="search" placeholder="Search creators" aria-label="Search creators">
+      </div>
+      <div class="table-wrap">
+        <table class="assignment-table">
+          <thead><tr><th>Creator</th><th>Videos</th><th>Shorts</th><th><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody id="assignments-body"></tbody>
+        </table>
+      </div>
+      <p id="assignments-empty" class="empty">No creator rules yet.</p>
+    </section>
+
+    <section>
+      <h2>Backup and restore</h2>
+      <p class="section-help">Export all settings to JSON, or import a previous backup.</p>
+      <div class="backup-row">
+        <button id="export-settings" type="button">Export JSON</button>
+        <input id="import-file" type="file" accept="application/json,.json">
+        <select id="import-mode" aria-label="Import mode">
+          <option value="merge">Merge with current settings</option>
+          <option value="replace">Replace current settings</option>
+        </select>
+        <button id="import-settings" class="primary" type="button">Import JSON</button>
+      </div>
+    </section>
+
+    <p id="status" role="status" aria-live="polite"></p>
+  </main>
+
+  <script src="shared.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

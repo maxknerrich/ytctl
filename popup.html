@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YouTube Speed Profiles</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Speed Profiles</h1>
+        <p id="context-label">Connecting to YouTube…</p>
+      </div>
+      <button id="open-settings" class="icon-button" type="button" title="Open settings" aria-label="Open settings">⚙</button>
+    </header>
+
+    <section id="unavailable" class="notice" hidden>
+      Open a YouTube video or Short to use speed controls.
+    </section>
+
+    <div id="controls" hidden>
+      <section class="speed-card">
+        <span class="eyebrow">Current speed</span>
+        <div class="speed-controls">
+          <button id="decrease" type="button" aria-label="Decrease speed">−</button>
+          <label>
+            <span class="sr-only">Playback speed</span>
+            <input id="current-speed" type="number" min="0.25" max="4" step="0.05">
+            <span>×</span>
+          </label>
+          <button id="increase" type="button" aria-label="Increase speed">+</button>
+        </div>
+        <button id="reset" class="text-button" type="button">Reset to assigned speed</button>
+        <p id="effective-rule" class="muted"></p>
+      </section>
+
+      <section id="creator-section">
+        <span class="eyebrow">Creator rule</span>
+        <h2 id="creator-name">Unknown creator</h2>
+        <label for="assignment">Use for this creator’s <span id="kind-name">videos</span></label>
+        <select id="assignment"></select>
+        <label id="custom-speed-row" hidden>
+          Custom speed
+          <span class="inline-input"><input id="custom-speed" type="number" min="0.25" max="4" step="0.05"> ×</span>
+        </label>
+        <button id="save-assignment" class="primary" type="button">Save creator rule</button>
+        <button id="save-current-custom" class="secondary" type="button">Save current speed for creator</button>
+        <button id="update-profile" class="secondary" type="button" hidden></button>
+      </section>
+    </div>
+
+    <p id="status" role="status" aria-live="polite"></p>
+  </main>
+
+  <script src="shared.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Speed Profiles",
+  "version": "1.0.0",
+  "description": "Control YouTube playback speed with hotkeys, profiles, and per-creator rules.",
+  "permissions": ["storage", "tabs"],
+  "host_permissions": [
+    "*://youtube.com/*",
+    "*://www.youtube.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://youtube.com/*",
+        "*://www.youtube.com/*"
+      ],
+      "js": ["shared.js", "content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "scripts": ["shared.js", "background.js"]
+  },
+  "commands": {
+    "increase": {
+      "suggested_key": { "default": "Alt+Shift+Up" },
+      "description": "Increase playback speed"
+    },
+    "decrease": {
+      "suggested_key": { "default": "Alt+Shift+Down" },
+      "description": "Decrease playback speed"
+    },
+    "reset": {
+      "suggested_key": { "default": "Alt+Shift+0" },
+      "description": "Reset playback speed"
+    },
+    "_execute_action": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "Open the speed profiles popup"
+    },
+    "profile1": { "suggested_key": { "default": "Alt+Shift+1" }, "description": "Activate profile slot 1" },
+    "profile2": { "suggested_key": { "default": "Alt+Shift+2" }, "description": "Activate profile slot 2" },
+    "profile3": { "suggested_key": { "default": "Alt+Shift+3" }, "description": "Activate profile slot 3" },
+    "profile4": { "suggested_key": { "default": "Alt+Shift+4" }, "description": "Activate profile slot 4" },
+    "profile5": { "suggested_key": { "default": "Alt+Shift+5" }, "description": "Activate profile slot 5" },
+    "profile6": { "suggested_key": { "default": "Alt+Shift+6" }, "description": "Activate profile slot 6" },
+    "profile7": { "suggested_key": { "default": "Alt+Shift+7" }, "description": "Activate profile slot 7" },
+    "profile8": { "suggested_key": { "default": "Alt+Shift+8" }, "description": "Activate profile slot 8" },
+    "profile9": { "suggested_key": { "default": "Alt+Shift+9" }, "description": "Activate profile slot 9" }
+  },
+  "action": {
+    "default_title": "YouTube Speed Profiles",
+    "default_popup": "popup.html",
+    "default_icon": "icons/icon.svg"
+  },
+  "icons": {
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "youtube-speed-profiles@local",
+      "strict_min_version": "115.0"
+    }
+  }
+}
