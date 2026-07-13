@@ -51,6 +51,30 @@ This creates:
 
 `manifest.json` and `manifest.firefox.json` are the Firefox manifests. Chrome-specific differences live in `manifest.chrome.json`. Firefox releases must be signed through Mozilla Add-ons; Chrome releases can be uploaded to the Chrome Web Store.
 
+## Development
+
+```bash
+npm install
+npm test
+npm run package
+```
+
+## Versioning with Changesets
+
+Add a changeset with each user-facing pull request:
+
+```bash
+npm run changeset
+```
+
+To consume pending changesets and update `CHANGELOG.md`, `package.json`, and all extension manifests:
+
+```bash
+npm run changeset:version
+```
+
+Commit the generated version changes, then run `npm run package` to produce the browser archives.
+
 ## Default hotkeys
 
 - `Alt + Shift + ↑`: increase speed
@@ -60,6 +84,10 @@ This creates:
 - `Alt + Shift + 1` through `9`: temporarily activate the profile in that slot
 
 Hotkeys can be changed or cleared in the extension's Settings page. They are ignored while focus is in a text or editable field.
+
+## License
+
+[MIT](LICENSE) © 2026 Max Knerrich
 
 ## Data
 

@@ -9,8 +9,9 @@ if ! cmp -s "$ROOT/manifest.json" "$ROOT/manifest.firefox.json"; then
   exit 1
 fi
 
-VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/manifest.firefox.json")"
+VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$ROOT/package.json")"
 COMMON_FILES=(
+  LICENSE
   shared.js
   background.js
   content.js
