@@ -75,6 +75,17 @@ npm run changeset:version
 
 Commit the generated version changes, then run `npm run package` to produce the browser archives.
 
+## Publish to Firefox Add-ons
+
+The manually triggered **Publish Firefox** workflow validates and submits the extension to AMO. Configure these GitHub Actions repository secrets first:
+
+- `AMO_JWT_ISSUER`
+- `AMO_JWT_SECRET`
+
+Create the credentials at [addons.mozilla.org/developers/addon/api/key](https://addons.mozilla.org/developers/addon/api/key/). Then open **Actions → Publish Firefox → Run workflow** and select the `listed` channel. The initial listing metadata is stored in `store/firefox/amo-metadata.json`.
+
+Mozilla reviews listed submissions before publication. Subsequent submissions must use a new version generated through Changesets.
+
 ## Default hotkeys
 
 - `Alt + Shift + ↑`: increase speed

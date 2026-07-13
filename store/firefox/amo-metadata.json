@@ -1,0 +1,26 @@
+{
+  "categories": {
+    "firefox": ["photos-music-videos"]
+  },
+  "default_locale": "en-US",
+  "name": {
+    "en-US": "ytctl"
+  },
+  "summary": {
+    "en-US": "Playback-speed hotkeys, profiles, and creator-specific rules for YouTube."
+  },
+  "description": {
+    "en-US": "Better controls for YouTube.\n\nytctl gives you flexible playback-speed control without silently changing your saved preferences.\n\nFeatures:\n\n- Customizable playback-speed hotkeys\n- Unlimited user-created speed profiles\n- Up to nine profile shortcut slots\n- Separate defaults for regular videos and Shorts\n- Per-creator profile or custom-speed rules\n- Temporary speed changes that never overwrite rules automatically\n- Local JSON backup and restore\n- Live streams and advertisements are left untouched\n\nAll settings stay in Firefox. ytctl does not collect analytics, viewing history, or personal data."
+  },
+  "homepage": {
+    "en-US": "https://github.com/maxknerrich/ytctl"
+  },
+  "requires_payment": false,
+  "version": {
+    "license": "MIT",
+    "release_notes": {
+      "en-US": "Initial release with playback-speed hotkeys, user-created profiles, separate Shorts settings, per-creator rules, and local backup and restore."
+    },
+    "approval_notes": "ytctl stores user-created settings locally with browser.storage.local. It does not collect analytics, viewing history, or personal data. When YouTube has not yet exposed stable creator metadata in the active page, the content script may fetch that same YouTube page to resolve its channel ID. No data is sent to the developer or any third-party service. The submitted extension contains unminified source files and requires no build step."
+  }
+}

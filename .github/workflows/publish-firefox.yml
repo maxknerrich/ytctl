@@ -1,0 +1,59 @@
+name: Publish Firefox
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: AMO distribution channel
+        required: true
+        default: listed
+        type: choice
+        options:
+          - listed
+          - unlisted
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-firefox
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    name: Submit to Mozilla Add-ons
+    runs-on: ubuntu-latest
+    environment: amo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run package
+      - run: npm run lint:firefox
+      - name: Submit extension to AMO
+        run: |
+          npx web-ext sign \
+            --source-dir dist/firefox \
+            --artifacts-dir web-ext-artifacts \
+            --channel "${{ inputs.channel }}" \
+            --amo-metadata store/firefox/amo-metadata.json \
+            --api-key "$AMO_JWT_ISSUER" \
+            --api-secret "$AMO_JWT_SECRET" \
+            --approval-timeout 0 \
+            --no-input
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+      - name: Upload submission artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ytctl-firefox-${{ github.sha }}
+          path: |
+            dist/ytctl-firefox-*.zip
+            web-ext-artifacts/
+          if-no-files-found: warn
