@@ -19,7 +19,7 @@
   "version": {
     "license": "MIT",
     "release_notes": {
-      "en-US": "Initial release with playback-speed hotkeys, user-created profiles, separate Shorts settings, per-creator rules, and local backup and restore."
+      "en-US": "Initial beta release with playback-speed hotkeys, user-created profiles, separate Shorts settings, per-creator rules, and local backup and restore."
     },
     "approval_notes": "ytctl stores user-created settings locally with browser.storage.local. It does not collect analytics, viewing history, or personal data. When YouTube has not yet exposed stable creator metadata in the active page, the content script may fetch that same YouTube page to resolve its channel ID. No data is sent to the developer or any third-party service. The submitted extension contains unminified source files and requires no build step."
   }

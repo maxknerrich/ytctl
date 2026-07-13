@@ -4,6 +4,8 @@
 
 The first ytctl feature is flexible playback-speed control with hotkeys, user-created profiles, and per-creator rules.
 
+> **Status:** `0.1.x` beta. Versioning follows [Epoch Semantic Versioning](VERSIONING.md).
+
 ## Features
 
 - Playback speeds from 0.25× to 4×
@@ -82,7 +84,7 @@ The manually triggered **Publish Firefox** workflow validates and submits the ex
 - `AMO_JWT_ISSUER`
 - `AMO_JWT_SECRET`
 
-Create the credentials at [addons.mozilla.org/developers/addon/api/key](https://addons.mozilla.org/developers/addon/api/key/). Then open **Actions → Publish Firefox → Run workflow** and select the `listed` channel. The initial listing metadata is stored in `store/firefox/amo-metadata.json`.
+Create the credentials at [addons.mozilla.org/developers/addon/api/key](https://addons.mozilla.org/developers/addon/api/key/). Then open **Actions → Publish Firefox → Run workflow**. Leave **Submit to AMO** disabled for a dry run that tests, packages, lints, and uploads the artifact without publishing. Enable it and select the `listed` channel when ready to submit. The initial listing metadata is stored in `store/firefox/amo-metadata.json`.
 
 Mozilla reviews listed submissions before publication. Subsequent submissions must use a new version generated through Changesets.
 

@@ -3,6 +3,11 @@ name: Publish Firefox
 on:
   workflow_dispatch:
     inputs:
+      publish:
+        description: Submit to AMO after validation
+        required: true
+        default: false
+        type: boolean
       channel:
         description: AMO distribution channel
         required: true
@@ -35,6 +40,7 @@ jobs:
       - run: npm run package
       - run: npm run lint:firefox
       - name: Submit extension to AMO
+        if: inputs.publish
         run: |
           npx web-ext sign \
             --source-dir dist/firefox \
