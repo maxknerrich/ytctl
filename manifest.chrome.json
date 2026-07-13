@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "ytctl",
   "version": "1.0.0",
+  "minimum_chrome_version": "110",
   "description": "Better controls for YouTube, starting with playback-speed hotkeys, profiles, and per-creator rules.",
   "permissions": ["storage", "tabs"],
   "host_permissions": [
@@ -20,7 +21,7 @@
     }
   ],
   "background": {
-    "scripts": ["shared.js", "background.js"]
+    "service_worker": "background.js"
   },
   "commands": {
     "increase": {
@@ -39,15 +40,15 @@
       "suggested_key": { "default": "Alt+Shift+P" },
       "description": "Open the speed profiles popup"
     },
-    "profile1": { "suggested_key": { "default": "Alt+Shift+1" }, "description": "Activate profile slot 1" },
-    "profile2": { "suggested_key": { "default": "Alt+Shift+2" }, "description": "Activate profile slot 2" },
-    "profile3": { "suggested_key": { "default": "Alt+Shift+3" }, "description": "Activate profile slot 3" },
-    "profile4": { "suggested_key": { "default": "Alt+Shift+4" }, "description": "Activate profile slot 4" },
-    "profile5": { "suggested_key": { "default": "Alt+Shift+5" }, "description": "Activate profile slot 5" },
-    "profile6": { "suggested_key": { "default": "Alt+Shift+6" }, "description": "Activate profile slot 6" },
-    "profile7": { "suggested_key": { "default": "Alt+Shift+7" }, "description": "Activate profile slot 7" },
-    "profile8": { "suggested_key": { "default": "Alt+Shift+8" }, "description": "Activate profile slot 8" },
-    "profile9": { "suggested_key": { "default": "Alt+Shift+9" }, "description": "Activate profile slot 9" }
+    "profile1": { "description": "Activate profile slot 1" },
+    "profile2": { "description": "Activate profile slot 2" },
+    "profile3": { "description": "Activate profile slot 3" },
+    "profile4": { "description": "Activate profile slot 4" },
+    "profile5": { "description": "Activate profile slot 5" },
+    "profile6": { "description": "Activate profile slot 6" },
+    "profile7": { "description": "Activate profile slot 7" },
+    "profile8": { "description": "Activate profile slot 8" },
+    "profile9": { "description": "Activate profile slot 9" }
   },
   "action": {
     "default_title": "ytctl",
@@ -70,11 +71,5 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "ytctl@maxknerrich",
-      "strict_min_version": "115.0"
-    }
   }
 }

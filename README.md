@@ -12,19 +12,44 @@ The first ytctl feature is flexible playback-speed control with hotkeys, user-cr
 - Separate defaults and creator rules for regular videos and Shorts
 - Temporary speed changes that never overwrite rules automatically
 - Creator profile or custom-speed assignments from the toolbar popup
-- Searchable creator-rule management in Settings
+- Searchable creator-rule management with channel avatars in Settings
 - Local-only storage with JSON backup and restore
 - Live streams fixed at 1× and ads left untouched
 
 ## Install temporarily for development
 
-1. Open `about:debugging` in Firefox.
+### Firefox
+
+1. Open `about:debugging`.
 2. Select **This Firefox**.
 3. Select **Load Temporary Add-on…**.
 4. Choose this repository's `manifest.json`.
-5. Open a YouTube video and pin the extension to the toolbar if desired.
+5. Reload any YouTube tabs that were already open.
 
-Temporary extensions are removed when Firefox restarts. A persistent installation must be packaged and signed through Mozilla Add-ons.
+### Chrome
+
+1. Run `./scripts/package.sh`.
+2. Open `chrome://extensions`.
+3. Enable **Developer mode**.
+4. Select **Load unpacked**.
+5. Choose `dist/chrome`.
+6. Reload any YouTube tabs that were already open.
+
+## Package releases
+
+Run:
+
+```bash
+./scripts/package.sh
+```
+
+This creates:
+
+- `dist/ytctl-firefox-<version>.zip`
+- `dist/ytctl-chrome-<version>.zip`
+- `dist/firefox` and `dist/chrome` unpacked development builds
+
+`manifest.json` and `manifest.firefox.json` are the Firefox manifests. Chrome-specific differences live in `manifest.chrome.json`. Firefox releases must be signed through Mozilla Add-ons; Chrome releases can be uploaded to the Chrome Web Store.
 
 ## Default hotkeys
 

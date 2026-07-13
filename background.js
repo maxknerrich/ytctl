@@ -1,3 +1,5 @@
+if (!globalThis.YTSpeed && typeof importScripts === "function") importScripts("shared.js");
+
 (() => {
   "use strict";
 

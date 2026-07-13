@@ -3,17 +3,18 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
 
-function loadShared() {
+function loadShared(apiGlobal = "browser") {
   const store = {};
-  const context = {
-    browser: {
-      storage: {
-        local: {
-          async get(key) { return { [key]: store[key] }; },
-          async set(values) { Object.assign(store, values); }
-        }
+  const extensionApi = {
+    storage: {
+      local: {
+        async get(key) { return { [key]: store[key] }; },
+        async set(values) { Object.assign(store, values); }
       }
-    },
+    }
+  };
+  const context = {
+    [apiGlobal]: extensionApi,
     crypto: { randomUUID: () => `id-${Math.random()}` },
     console
   };
@@ -21,6 +22,11 @@ function loadShared() {
   vm.runInContext(fs.readFileSync("shared.js", "utf8"), context);
   return { api: context.YTSpeed, store };
 }
+
+test("the Chrome API is exposed through the browser compatibility name", () => {
+  const { api } = loadShared("chrome");
+  assert.equal(typeof api.loadSettings, "function");
+});
 
 test("defaults have no generated profiles", () => {
   const { api } = loadShared();
