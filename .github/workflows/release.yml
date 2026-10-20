@@ -1,0 +1,197 @@
+# Builds both browser packages once, then submits them to the stores.
+#
+# - Merging the Changesets version PR (a package.json version change on main)
+#   submits that version to AMO and the Chrome Web Store, then creates a
+#   GitHub release with both zips.
+# - Chrome uses staged publishing by default: Google reviews automatically,
+#   then the approved version waits in the dashboard until you press Publish.
+# - Run the workflow manually to dry-run (leave both stores unticked) or to
+#   retry a single store.
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      firefox:
+        description: Submit to Firefox Add-ons (AMO)
+        type: boolean
+        default: false
+      firefox_channel:
+        description: AMO distribution channel
+        type: choice
+        default: listed
+        options:
+          - listed
+          - unlisted
+      chrome:
+        description: Submit to the Chrome Web Store
+        type: boolean
+        default: false
+      chrome_publish:
+        description: After Chrome review approves the version
+        type: choice
+        default: staged
+        options:
+          - staged
+          - immediate
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and verify
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      firefox: ${{ steps.release.outputs.firefox }}
+      chrome: ${{ steps.release.outputs.chrome }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run package
+      - run: npm run lint:firefox
+      - name: Decide which stores to submit to
+        id: release
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          MANUAL_FIREFOX: ${{ inputs.firefox || false }}
+          MANUAL_CHROME: ${{ inputs.chrome || false }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          firefox=false
+          chrome=false
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            firefox="$MANUAL_FIREFOX"
+            chrome="$MANUAL_CHROME"
+          elif [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            previous="$(git show "$BEFORE_SHA:package.json" 2>/dev/null | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).version))" || true)"
+            if [[ -n "$previous" && "$previous" != "$version" ]]; then
+              firefox=true
+              chrome=true
+            fi
+          fi
+
+          {
+            echo "version=$version"
+            echo "firefox=$firefox"
+            echo "chrome=$chrome"
+          } >> "$GITHUB_OUTPUT"
+          echo "Version $version; Firefox: $firefox; Chrome: $chrome"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ytctl-${{ steps.release.outputs.version }}
+          path: dist/ytctl-*.zip
+          if-no-files-found: error
+
+  firefox:
+    name: Submit to Firefox Add-ons
+    needs: build
+    if: needs.build.outputs.firefox == 'true'
+    runs-on: ubuntu-latest
+    environment: amo
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v8
+        with:
+          name: ytctl-${{ needs.build.outputs.version }}
+          path: dist
+      - run: unzip -q "dist/ytctl-firefox-$VERSION.zip" -d dist/firefox
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+      - name: Submit extension to AMO
+        run: |
+          npx web-ext sign \
+            --source-dir dist/firefox \
+            --artifacts-dir web-ext-artifacts \
+            --channel "$AMO_CHANNEL" \
+            --amo-metadata store/firefox/amo-metadata.json \
+            --api-key "$AMO_JWT_ISSUER" \
+            --api-secret "$AMO_JWT_SECRET" \
+            --approval-timeout 0 \
+            --no-input
+        env:
+          AMO_CHANNEL: ${{ inputs.firefox_channel || 'listed' }}
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+
+  chrome:
+    name: Submit to Chrome Web Store
+    needs: build
+    if: needs.build.outputs.chrome == 'true'
+    runs-on: ubuntu-latest
+    environment: chrome-web-store
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: ytctl-${{ needs.build.outputs.version }}
+          path: dist
+      - name: Authenticate to Google Cloud
+        id: google
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore
+      - name: Upload and submit for review
+        run: node scripts/publish-chrome.mjs "dist/ytctl-chrome-$VERSION.zip"
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          CWS_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
+          CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
+          CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+          CWS_PUBLISH_TYPE: ${{ inputs.chrome_publish == 'immediate' && 'DEFAULT_PUBLISH' || 'STAGED_PUBLISH' }}
+
+  github-release:
+    name: Create GitHub release
+    needs: [build, firefox, chrome]
+    if: >-
+      always()
+      && (needs.build.outputs.firefox == 'true' || needs.build.outputs.chrome == 'true')
+      && !contains(needs.*.result, 'failure')
+      && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: ytctl-${{ needs.build.outputs.version }}
+          path: dist
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          if ! gh release view "v$VERSION" > /dev/null 2>&1; then
+            args=("v$VERSION" --target "$GITHUB_SHA" --title "ytctl $VERSION" --generate-notes)
+            [[ "$VERSION" == 0.* ]] && args+=(--prerelease)
+            gh release create "${args[@]}"
+          fi
+          gh release upload "v$VERSION" dist/ytctl-*.zip --clobber

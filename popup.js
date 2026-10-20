@@ -1,36 +1,38 @@
 (() => {
   "use strict";
 
+  const { h, icon, speed, toast, ask, avatar } = UI;
+  const $ = (id) => document.getElementById(id);
   const elements = {
-    unavailable: document.getElementById("unavailable"),
-    controls: document.getElementById("controls"),
-    context: document.getElementById("context-label"),
-    currentSpeed: document.getElementById("current-speed"),
-    decrease: document.getElementById("decrease"),
-    increase: document.getElementById("increase"),
-    reset: document.getElementById("reset"),
-    effectiveRule: document.getElementById("effective-rule"),
-    creatorSection: document.getElementById("creator-section"),
-    creatorName: document.getElementById("creator-name"),
-    kindName: document.getElementById("kind-name"),
-    assignment: document.getElementById("assignment"),
-    customRow: document.getElementById("custom-speed-row"),
-    customSpeed: document.getElementById("custom-speed"),
-    saveAssignment: document.getElementById("save-assignment"),
-    saveCurrentCustom: document.getElementById("save-current-custom"),
-    updateProfile: document.getElementById("update-profile"),
-    openSettings: document.getElementById("open-settings"),
-    status: document.getElementById("status")
+    avatar: $("avatar"),
+    title: $("title"),
+    context: $("context"),
+    openSettings: $("open-settings"),
+    unavailable: $("unavailable"),
+    speed: $("speed"),
+    currentSpeed: $("current-speed"),
+    decrease: $("decrease"),
+    increase: $("increase"),
+    source: $("source"),
+    reset: $("reset"),
+    presets: $("presets"),
+    rule: $("rule"),
+    kindName: $("kind-name"),
+    assignment: $("assignment"),
+    customField: $("custom-field"),
+    customSpeed: $("custom-speed"),
+    saveCurrent: $("save-current"),
+    updateProfile: $("update-profile")
   };
 
-  let settings;
-  let tabId;
-  let pageState;
+  // Quick speeds offered when the user has not created any profiles yet.
+  const FALLBACK_PRESETS = [1, 1.25, 1.5, 1.75, 2];
 
-  function setStatus(message, error = false) {
-    elements.status.textContent = message;
-    elements.status.classList.toggle("error", error);
-  }
+  let settings = YTSpeed.defaults();
+  let tabId;
+  let pageState = null;
+
+  const sameSpeed = (a, b) => Math.abs(a - b) < 0.001;
 
   async function send(message) {
     try {
@@ -40,190 +42,185 @@
     }
   }
 
-  function selectedRule() {
-    const value = elements.assignment.value;
-    if (value === "default") return null;
-    if (value === "custom") return { type: "custom", speed: YTSpeed.clampSpeed(elements.customSpeed.value) };
-    if (value.startsWith("profile:")) return { type: "profile", profileId: value.slice(8) };
-    return null;
+  // Sends a speed command to the page and re-renders with the returned state.
+  async function command(message) {
+    pageState = (await send(message)) || pageState;
+    render();
   }
 
-  function currentStoredRule() {
+  function storedRule() {
     if (!pageState?.channel) return null;
     return settings.assignments[pageState.channel.id]?.[pageState.kind] || null;
   }
 
-  function fillAssignmentOptions() {
-    elements.assignment.replaceChildren();
-    const defaultOption = document.createElement("option");
-    defaultOption.value = "default";
-    defaultOption.textContent = `No creator rule (${pageState.kind === "shorts" ? settings.defaultShortsSpeed : settings.defaultVideoSpeed}× default)`;
-    elements.assignment.append(defaultOption);
+  function ruleProfile() {
+    const rule = storedRule();
+    return rule?.type === "profile" ? settings.profiles.find((profile) => profile.id === rule.profileId) : null;
+  }
 
-    for (const profile of settings.profiles) {
-      const option = document.createElement("option");
-      option.value = `profile:${profile.id}`;
-      option.textContent = `${profile.name} — ${profile.speed}×`;
-      elements.assignment.append(option);
+  function renderHeader() {
+    const channel = pageState?.channel;
+    if (channel) {
+      const next = avatar(channel.name, channel.avatarUrl);
+      next.id = "avatar";
+      elements.avatar.replaceWith(next);
+      elements.avatar = next;
     }
+    elements.title.textContent = channel?.name || "ytctl";
+    if (!tabId) elements.context.textContent = "Not a YouTube tab";
+    else if (!pageState) elements.context.textContent = "Reload this tab to connect";
+    else if (!pageState.supported) elements.context.textContent = "No video playing";
+    else if (pageState.isLive) elements.context.textContent = "Live stream · fixed at 1×";
+    else elements.context.textContent = `${pageState.kind === "shorts" ? "Short" : "Video"}${channel ? "" : " · creator unknown"}`;
+  }
 
-    const customOption = document.createElement("option");
-    customOption.value = "custom";
-    customOption.textContent = "Custom speed…";
-    elements.assignment.append(customOption);
+  function renderSpeed() {
+    const { currentSpeed, temporarySpeed, base, isLive } = pageState;
+    if (document.activeElement !== elements.currentSpeed) elements.currentSpeed.value = YTSpeed.clampSpeed(currentSpeed);
+    for (const control of [elements.currentSpeed, elements.decrease, elements.increase]) control.disabled = isLive;
 
-    const rule = currentStoredRule();
-    if (rule?.type === "profile" && settings.profiles.some((profile) => profile.id === rule.profileId)) {
-      elements.assignment.value = `profile:${rule.profileId}`;
-    } else if (rule?.type === "custom") {
-      elements.assignment.value = "custom";
-      elements.customSpeed.value = rule.speed;
-    } else {
-      elements.assignment.value = "default";
-      elements.customSpeed.value = pageState.currentSpeed;
-    }
-    elements.customRow.hidden = elements.assignment.value !== "custom";
+    const temporary = temporarySpeed !== null && !sameSpeed(temporarySpeed, base.speed);
+    elements.source.textContent = temporary ? `Temporary · ${base.label} is ${speed(base.speed)}` : `${base.label} · ${speed(base.speed)}`;
+    elements.reset.hidden = !temporary || isLive;
+
+    const presets = settings.profiles.length
+      ? settings.profiles.map((profile) => ({ label: profile.name, value: profile.speed }))
+      : FALLBACK_PRESETS.map((value) => ({ label: speed(value), value }));
+    elements.presets.hidden = isLive;
+    elements.presets.replaceChildren(...presets.map((preset) => h("button", {
+      type: "button",
+      className: "chip",
+      "aria-pressed": sameSpeed(preset.value, currentSpeed),
+      onclick: () => command({ type: "SET_TEMP_SPEED", speed: preset.value })
+    }, preset.label, settings.profiles.length ? h("small", {}, speed(preset.value)) : null)));
+  }
+
+  function renderRule() {
+    const { channel, kind, currentSpeed, isLive, base } = pageState;
+    elements.rule.hidden = !channel;
+    if (!channel) return;
+
+    elements.kindName.textContent = kind === "shorts" ? "Shorts" : "videos";
+    const defaultSpeed = kind === "shorts" ? settings.defaultShortsSpeed : settings.defaultVideoSpeed;
+    elements.assignment.replaceChildren(
+      h("option", { value: "default" }, `Default speed (${speed(defaultSpeed)})`),
+      ...settings.profiles.map((profile) => h("option", { value: `profile:${profile.id}` }, `${profile.name} · ${speed(profile.speed)}`)),
+      h("option", { value: "custom" }, "Custom speed…")
+    );
+
+    const rule = storedRule();
+    const profile = ruleProfile();
+    elements.assignment.value = profile ? `profile:${profile.id}` : rule?.type === "custom" ? "custom" : "default";
+    elements.customField.hidden = elements.assignment.value !== "custom";
+    if (rule?.type === "custom" && document.activeElement !== elements.customSpeed) elements.customSpeed.value = rule.speed;
+
+    const differs = !isLive && !sameSpeed(currentSpeed, base.speed);
+    const current = speed(YTSpeed.clampSpeed(currentSpeed));
+    elements.saveCurrent.hidden = !differs;
+    elements.saveCurrent.textContent = `Always use ${current} here`;
+    elements.updateProfile.hidden = !differs || !profile;
+    if (profile) elements.updateProfile.textContent = `Set “${profile.name}” to ${current}`;
   }
 
   function render() {
     const available = Boolean(pageState?.supported);
+    renderHeader();
     elements.unavailable.hidden = available;
-    elements.controls.hidden = !available;
-    if (!available) {
-      elements.context.textContent = "No supported video detected";
-      return;
-    }
-
-    const kindLabel = pageState.kind === "shorts" ? "Short" : "Video";
-    elements.context.textContent = pageState.isLive ? "Live stream · fixed at 1×" : kindLabel;
-    elements.currentSpeed.value = Number(pageState.currentSpeed).toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
-    elements.currentSpeed.disabled = pageState.isLive;
-    elements.decrease.disabled = pageState.isLive;
-    elements.increase.disabled = pageState.isLive;
-    elements.reset.disabled = pageState.isLive;
-    elements.effectiveRule.textContent = pageState.temporarySpeed !== null
-      ? `Temporary override · assigned: ${pageState.base.label} (${pageState.base.speed}×)`
-      : `${pageState.base.label} · ${pageState.base.speed}×`;
-
-    elements.kindName.textContent = pageState.kind === "shorts" ? "Shorts" : "videos";
-    if (!pageState.channel) {
-      elements.creatorName.textContent = "Creator unavailable";
-      elements.creatorSection.querySelectorAll("select, input, button").forEach((control) => { control.disabled = true; });
-      elements.updateProfile.hidden = true;
-      return;
-    }
-
-    elements.creatorSection.querySelectorAll("select, input, button").forEach((control) => { control.disabled = false; });
-    elements.creatorName.textContent = pageState.channel.name;
-    fillAssignmentOptions();
-
-    const rule = currentStoredRule();
-    const profile = rule?.type === "profile" ? settings.profiles.find((item) => item.id === rule.profileId) : null;
-    const canUpdate = profile && Math.abs(profile.speed - pageState.currentSpeed) >= 0.001;
-    elements.updateProfile.hidden = !canUpdate;
-    if (canUpdate) elements.updateProfile.textContent = `Update “${profile.name}” to ${YTSpeed.clampSpeed(pageState.currentSpeed)}×`;
+    elements.speed.hidden = !available;
+    elements.rule.hidden = !available;
+    if (!available) return;
+    renderSpeed();
+    renderRule();
   }
 
-  async function refreshFromPage() {
-    pageState = await send({ type: "GET_STATE" });
-    render();
-  }
-
+  // Stores `rule` (or removes it when null) for the current creator and content kind.
   async function saveRule(rule) {
-    const channel = pageState.channel;
-    const kind = pageState.kind;
+    const { channel, kind } = pageState;
     settings = await YTSpeed.updateSettings((next) => {
-      const existing = next.assignments[channel.id] || {
-        channelId: channel.id,
-        channelName: channel.name,
-        channelUrl: channel.url,
-        channelAvatarUrl: channel.avatarUrl || "",
-        video: null,
-        shorts: null,
-        updatedAt: Date.now()
-      };
-      existing.channelName = channel.name;
-      existing.channelUrl = channel.url;
-      existing.channelAvatarUrl = channel.avatarUrl || existing.channelAvatarUrl || "";
-      existing[kind] = rule;
-      existing.updatedAt = Date.now();
-      if (!existing.video && !existing.shorts) delete next.assignments[channel.id];
-      else next.assignments[channel.id] = existing;
-      return next;
+      const assignment = next.assignments[channel.id] || { channelId: channel.id, video: null, shorts: null };
+      assignment.channelName = channel.name;
+      assignment.channelUrl = channel.url;
+      assignment.channelAvatarUrl = channel.avatarUrl || assignment.channelAvatarUrl || "";
+      assignment[kind] = rule;
+      assignment.updatedAt = Date.now();
+      if (!assignment.video && !assignment.shorts) delete next.assignments[channel.id];
+      else next.assignments[channel.id] = assignment;
     });
-    pageState = await send({ type: "REFRESH_SETTINGS", resetTemporary: true }) || pageState;
-    render();
+    await command({ type: "REFRESH_SETTINGS", resetTemporary: true });
+    toast(rule ? "Creator rule saved" : "Creator rule removed");
   }
+
+  function selectedRule() {
+    const { value } = elements.assignment;
+    if (value === "custom") return { type: "custom", speed: YTSpeed.clampSpeed(elements.customSpeed.value) };
+    if (value.startsWith("profile:")) return { type: "profile", profileId: value.slice("profile:".length) };
+    return null;
+  }
+
+  elements.openSettings.append(icon("settings"));
+  elements.decrease.append(icon("minus"));
+  elements.increase.append(icon("plus"));
+
+  elements.decrease.addEventListener("click", () => command({ type: "ADJUST_SPEED", delta: -settings.hotkeyStep }));
+  elements.increase.addEventListener("click", () => command({ type: "ADJUST_SPEED", delta: settings.hotkeyStep }));
+  elements.currentSpeed.addEventListener("change", () => command({ type: "SET_TEMP_SPEED", speed: elements.currentSpeed.value }));
+  elements.reset.addEventListener("click", () => command({ type: "RESET_SPEED" }));
 
   elements.assignment.addEventListener("change", () => {
-    elements.customRow.hidden = elements.assignment.value !== "custom";
     if (elements.assignment.value === "custom" && !elements.customSpeed.value) {
-      elements.customSpeed.value = pageState.currentSpeed;
+      elements.customSpeed.value = YTSpeed.clampSpeed(pageState.currentSpeed);
     }
+    saveRule(selectedRule());
   });
 
-  elements.decrease.addEventListener("click", async () => {
-    pageState = await send({ type: "ADJUST_SPEED", delta: -settings.hotkeyStep }) || pageState;
-    render();
+  elements.customSpeed.addEventListener("change", () => {
+    if (elements.customSpeed.checkValidity()) saveRule(selectedRule());
   });
 
-  elements.increase.addEventListener("click", async () => {
-    pageState = await send({ type: "ADJUST_SPEED", delta: settings.hotkeyStep }) || pageState;
-    render();
-  });
-
-  elements.currentSpeed.addEventListener("change", async () => {
-    pageState = await send({ type: "SET_TEMP_SPEED", speed: elements.currentSpeed.value }) || pageState;
-    render();
-  });
-
-  elements.reset.addEventListener("click", async () => {
-    pageState = await send({ type: "RESET_SPEED" }) || pageState;
-    render();
-  });
-
-  elements.saveAssignment.addEventListener("click", async () => {
-    await saveRule(selectedRule());
-    setStatus("Creator rule saved.");
-  });
-
-  elements.saveCurrentCustom.addEventListener("click", async () => {
-    await saveRule({ type: "custom", speed: YTSpeed.clampSpeed(pageState.currentSpeed) });
-    setStatus("Current speed saved for this creator.");
+  elements.saveCurrent.addEventListener("click", () => {
+    elements.customSpeed.value = YTSpeed.clampSpeed(pageState.currentSpeed);
+    saveRule({ type: "custom", speed: YTSpeed.clampSpeed(pageState.currentSpeed) });
   });
 
   elements.updateProfile.addEventListener("click", async () => {
-    const rule = currentStoredRule();
-    const profile = rule?.type === "profile" ? settings.profiles.find((item) => item.id === rule.profileId) : null;
+    const profile = ruleProfile();
     if (!profile) return;
     const usage = YTSpeed.profileUsage(settings, profile.id);
-    const speed = YTSpeed.clampSpeed(pageState.currentSpeed);
-    if (!confirm(`Update “${profile.name}” from ${profile.speed}× to ${speed}×? This affects ${usage} creator rule${usage === 1 ? "" : "s"}.`)) return;
-    settings = await YTSpeed.updateSettings((next) => {
-      const target = next.profiles.find((item) => item.id === profile.id);
-      if (target) target.speed = speed;
-      return next;
+    const next = YTSpeed.clampSpeed(pageState.currentSpeed);
+    const answer = await ask(
+      `Change “${profile.name}” from ${speed(profile.speed)} to ${speed(next)}? This affects ${usage} creator rule${usage === 1 ? "" : "s"}.`,
+      [{ label: "Update profile", value: "update", kind: "primary" }]
+    );
+    if (answer !== "update") return;
+    settings = await YTSpeed.updateSettings((draft) => {
+      const target = draft.profiles.find((item) => item.id === profile.id);
+      if (target) target.speed = next;
     });
-    pageState = await send({ type: "REFRESH_SETTINGS", resetTemporary: true }) || pageState;
-    render();
-    setStatus(`Profile “${profile.name}” updated.`);
+    await command({ type: "REFRESH_SETTINGS", resetTemporary: true });
+    toast(`“${profile.name}” updated`);
   });
 
-  elements.openSettings.addEventListener("click", () => browser.runtime.openOptionsPage());
+  elements.openSettings.addEventListener("click", () => {
+    browser.runtime.openOptionsPage();
+    window.close();
+  });
+
+  YTSpeed.onSettingsChanged((next) => {
+    settings = next;
+    render();
+  });
 
   (async () => {
     settings = await YTSpeed.loadSettings();
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    tabId = tab?.id;
-    if (!tabId || !/^https?:\/\/(www\.)?youtube\.com\//.test(tab.url || "")) {
-      pageState = null;
-      render();
-      return;
+    if (tab?.id && /^https?:\/\/(www\.)?youtube\.com\//.test(tab.url || "")) {
+      tabId = tab.id;
+      pageState = await send({ type: "GET_STATE" });
     }
-    await refreshFromPage();
+    render();
   })().catch((error) => {
-    setStatus(error.message || "Unable to load the extension.", true);
     pageState = null;
     render();
+    toast(error.message || "Unable to load ytctl", true);
   });
 })();

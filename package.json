@@ -14,10 +14,15 @@
     "lint:firefox": "web-ext lint --source-dir dist/firefox",
     "changeset": "changeset",
     "changeset:status": "changeset status",
-    "changeset:version": "changeset version && node scripts/sync-version.mjs"
+    "changeset:version": "changeset version && node scripts/sync-version.mjs",
+    "test:e2e": "npm run package && node --test --test-concurrency=1 \"tests/e2e/*.test.mjs\"",
+    "store:screenshots": "npm run package && node scripts/store-screenshots.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
+    "@puppeteer/browsers": "^3.2.5",
+    "puppeteer-core": "^25.14.0",
+    "selfsigned": "^5.5.0",
     "web-ext": "^10.5.0"
   }
 }

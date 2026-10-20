@@ -236,16 +236,25 @@
     setVideoRate(desiredSpeed());
   }
 
-  function showOverlay(message) {
-    let overlay = document.getElementById("yt-speed-profiles-overlay");
+  // Shows a short-lived toast inside the player (so it stays visible in
+  // fullscreen), falling back to the page when no player is found.
+  function showOverlay(value, label = "") {
+    let overlay = document.getElementById("ytctl-overlay");
     if (!overlay) {
       overlay = document.createElement("div");
-      overlay.id = "yt-speed-profiles-overlay";
+      overlay.id = "ytctl-overlay";
       overlay.setAttribute("role", "status");
       overlay.setAttribute("aria-live", "polite");
-      document.body.append(overlay);
     }
-    overlay.textContent = message;
+    const host = getPlayerElement() || document.body;
+    if (overlay.parentElement !== host) host.append(overlay);
+    overlay.classList.toggle("in-page", host === document.body);
+    const valueText = document.createElement("strong");
+    valueText.textContent = value;
+    const labelText = document.createElement("span");
+    labelText.textContent = label;
+    labelText.hidden = !label;
+    overlay.replaceChildren(valueText, labelText);
     overlay.classList.remove("visible");
     void overlay.offsetWidth;
     overlay.classList.add("visible");
@@ -253,14 +262,14 @@
     showOverlay.timer = setTimeout(() => overlay.classList.remove("visible"), 1500);
   }
 
-  function setTemporary(speed, label = "Speed") {
+  function setTemporary(speed, label = "") {
     if (state.isLive) {
-      showOverlay("Live streams stay at 1×");
+      showOverlay("1×", "Live streams stay at 1×");
       return false;
     }
     state.temporarySpeed = YTSpeed.clampSpeed(speed);
     setVideoRate(state.temporarySpeed);
-    showOverlay(`${label}: ${state.temporarySpeed}×`);
+    showOverlay(`${state.temporarySpeed}×`, label);
     return true;
   }
 
@@ -268,7 +277,7 @@
     state.temporarySpeed = null;
     state.base = calculateBase();
     setVideoRate(state.base.speed);
-    showOverlay(`Reset: ${state.base.label} — ${state.base.speed}×`);
+    showOverlay(`${state.base.speed}×`, `Reset · ${state.base.label}`);
   }
 
   function onRateChange() {
@@ -367,8 +376,8 @@
     else if (action.startsWith("profile")) {
       const slot = Number(action.replace("profile", ""));
       const profile = settings.profiles.find((item) => item.slot === slot);
-      if (profile) setTemporary(profile.speed, `Profile: ${profile.name}`);
-      else showOverlay(`No profile assigned to slot ${slot}`);
+      if (profile) setTemporary(profile.speed, profile.name);
+      else showOverlay("–", `No profile in slot ${slot}`);
     } else return false;
     return true;
   }
@@ -412,8 +421,9 @@
   }, true);
 
   document.addEventListener("yt-navigate-finish", refreshPage);
-  browser.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes[YTSpeed.STORAGE_KEY]) reloadSettings(false);
+  YTSpeed.onSettingsChanged((next) => {
+    settings = next;
+    applyDesired();
   });
 
   YTSpeed.loadSettings().then((loaded) => {

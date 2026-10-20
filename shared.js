@@ -108,23 +108,35 @@ if (!globalThis.browser && globalThis.chrome) globalThis.browser = globalThis.ch
     return base;
   }
 
+  // Reads settings. Never writes: a missing or unreadable value must not be
+  // replaced with defaults, or a single empty read would wipe user data.
   async function loadSettings() {
     const stored = await browser.storage.local.get(STORAGE_KEY);
-    const settings = normalize(stored[STORAGE_KEY]);
-    if (!stored[STORAGE_KEY]) await saveSettings(settings);
-    return settings;
+    return normalize(stored[STORAGE_KEY]);
   }
 
-  async function saveSettings(settings) {
-    const normalized = normalize(settings);
-    await browser.storage.local.set({ [STORAGE_KEY]: normalized });
-    return normalized;
+  // Writes are queued so read-modify-write cycles in one context never interleave.
+  let writeQueue = Promise.resolve();
+
+  // The only way to change settings: applies `mutator` to a fresh copy from
+  // storage (it may mutate in place or return a replacement), so callers never
+  // overwrite changes made meanwhile by another page or tab.
+  function updateSettings(mutator) {
+    const run = writeQueue.then(async () => {
+      const settings = await loadSettings();
+      const next = normalize((await mutator(settings)) ?? settings);
+      await browser.storage.local.set({ [STORAGE_KEY]: next });
+      return next;
+    });
+    writeQueue = run.catch(() => {});
+    return run;
   }
 
-  async function updateSettings(mutator) {
-    const settings = await loadSettings();
-    const result = await mutator(settings) || settings;
-    return saveSettings(result);
+  // Calls `listener` with normalized settings whenever any context changes them.
+  function onSettingsChanged(listener) {
+    browser.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && changes[STORAGE_KEY]) listener(normalize(changes[STORAGE_KEY].newValue));
+    });
   }
 
   function makeId() {
@@ -210,8 +222,8 @@ if (!globalThis.browser && globalThis.chrome) globalThis.browser = globalThis.ch
     normalize,
     clampSpeed,
     loadSettings,
-    saveSettings,
     updateSettings,
+    onSettingsChanged,
     makeId,
     eventHotkey,
     formatHotkey,
