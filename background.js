@@ -24,7 +24,11 @@ if (!globalThis.YTSpeed && typeof importScripts === "function") importScripts("s
     profile9: "profile9"
   };
 
+  // Mirrors the configured hotkeys into browser-level commands so they also work
+  // outside the page focus. Firefox only: Chrome has no commands.update and
+  // manages shortcuts at chrome://extensions/shortcuts.
   async function syncCommands(settings) {
+    if (typeof browser.commands.update !== "function") return;
     for (const [settingName, commandName] of Object.entries(settingToCommand)) {
       try {
         await browser.commands.update({
@@ -48,10 +52,7 @@ if (!globalThis.YTSpeed && typeof importScripts === "function") importScripts("s
     }
   });
 
-  browser.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local" || !changes[YTSpeed.STORAGE_KEY]) return;
-    syncCommands(YTSpeed.normalize(changes[YTSpeed.STORAGE_KEY].newValue));
-  });
+  YTSpeed.onSettingsChanged(syncCommands);
 
   YTSpeed.loadSettings().then(syncCommands);
 })();

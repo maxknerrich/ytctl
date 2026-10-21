@@ -1,0 +1,272 @@
+/* Shared design system for the popup and the settings page.
+   Page-specific layout lives in popup.css and options.css (layer `layout`). */
+@layer tokens, base, components, layout, utilities;
+
+/* Chrome injects `body { font-family: …; font-size: 75% }` into extension
+   pages. Unlayered styles beat every layer, so undo it out here. */
+body { font: inherit; }
+
+@layer tokens {
+  :root {
+    color-scheme: light dark;
+
+    --bg: light-dark(#f7f7f8, #0f0f0f);
+    --surface: light-dark(#ffffff, #1b1b1b);
+    --surface-2: light-dark(#efeff1, #272727);
+    --surface-3: light-dark(#e4e4e7, #333333);
+    --text: light-dark(#0f0f0f, #f1f1f1);
+    --muted: light-dark(#5f5f66, #a8a8ad);
+    --border: light-dark(#e3e3e6, #2f2f2f);
+    --accent: light-dark(#d9251c, #ff4e45);
+    --accent-soft: light-dark(#fde8e7, #3a1614);
+    --on-accent: #ffffff;
+    --danger: light-dark(#b3261e, #ff8a80);
+    --focus: light-dark(#065fd4, #3ea6ff);
+    --shadow: 0 8px 28px rgb(0 0 0 / 0.18);
+
+    --radius-s: 8px;
+    --radius-m: 12px;
+    --radius-l: 16px;
+    --radius-pill: 999px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --text-s: 12px;
+    --text-m: 14px;
+    --text-l: 16px;
+  }
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    background: var(--bg);
+    color: var(--text);
+    font: var(--text-m)/1.45 var(--font);
+    accent-color: var(--accent);
+  }
+
+  body { margin: 0; }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2, h3 { font-weight: 650; letter-spacing: -0.01em; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  button, input, select { font: inherit; color: inherit; }
+  [hidden] { display: none !important; }
+}
+
+@layer components {
+  /* Buttons ---------------------------------------------------------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    min-height: 34px;
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--surface-2);
+    font-weight: 550;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 120ms ease;
+
+    &:hover { background: var(--surface-3); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    &.primary {
+      background: var(--text);
+      color: var(--bg);
+      &:hover { background: color-mix(in srgb, var(--text) 85%, var(--bg)); }
+    }
+
+    &.ghost {
+      background: transparent;
+      &:hover { background: var(--surface-2); }
+    }
+
+    &.danger { color: var(--danger); }
+  }
+
+  .icon-btn {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+
+    &:hover { background: var(--surface-2); color: var(--text); }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+    &.danger:hover { color: var(--danger); }
+    & svg { width: 18px; height: 18px; }
+  }
+
+  .link-btn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--focus);
+    font-weight: 550;
+    cursor: pointer;
+    &:hover { text-decoration: underline; }
+  }
+
+  /* Chips: toggle-style buttons using aria-pressed ------------------- */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    min-height: 32px;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: var(--radius-s);
+    background: var(--surface-2);
+    font-weight: 550;
+    cursor: pointer;
+
+    &:hover { background: var(--surface-3); }
+    & small { color: var(--muted); font-size: var(--text-s); font-variant-numeric: tabular-nums; }
+
+    &[aria-pressed="true"] {
+      background: var(--text);
+      color: var(--bg);
+      & small { color: inherit; opacity: 0.75; }
+    }
+  }
+
+  /* Form controls ---------------------------------------------------- */
+  .input, .select {
+    min-height: 34px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-s);
+    background: var(--surface);
+
+    &:hover { border-color: var(--surface-3); }
+    &:focus-visible { outline-offset: 0; border-color: var(--focus); }
+    &:disabled { opacity: 0.5; }
+    &:user-invalid { border-color: var(--danger); }
+  }
+
+  .select { padding-right: var(--space-2); }
+
+  /* Number input with a trailing "×" unit */
+  .speed-field {
+    display: inline-flex;
+    align-items: center;
+    width: 92px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-s);
+    background: var(--surface);
+
+    &:focus-within { border-color: var(--focus); }
+    &:has(:user-invalid) { border-color: var(--danger); }
+
+    & input {
+      width: 100%;
+      min-width: 0;
+      min-height: 32px;
+      padding: 0 0 0 var(--space-3);
+      border: 0;
+      background: none;
+      font-variant-numeric: tabular-nums;
+      &:focus-visible { outline: none; }
+    }
+
+    &::after {
+      content: "×";
+      padding: 0 var(--space-3) 0 var(--space-1);
+      color: var(--muted);
+    }
+  }
+
+  /* Avatars ---------------------------------------------------------- */
+  .avatar {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    color: var(--muted);
+    font-weight: 650;
+    object-fit: cover;
+  }
+
+  /* Dialog used by ui.ask() ------------------------------------------ */
+  .dialog {
+    width: min(360px, calc(100vw - 32px));
+    padding: var(--space-5);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-l);
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow);
+
+    &::backdrop { background: rgb(0 0 0 / 0.4); }
+    & p { margin-bottom: var(--space-5); }
+    & form { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+  }
+
+  /* Toast used by ui.toast() ----------------------------------------- */
+  .toast {
+    position: fixed;
+    bottom: var(--space-4);
+    left: 50%;
+    max-width: calc(100vw - 32px);
+    margin: 0;
+    padding: 10px var(--space-4);
+    border-radius: var(--radius-s);
+    background: var(--text);
+    color: var(--bg);
+    font-weight: 550;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    translate: -50% 8px;
+    transition: opacity 150ms ease, translate 150ms ease;
+
+    &.visible { opacity: 1; translate: -50% 0; }
+    &.error { background: var(--danger); color: var(--on-accent); }
+  }
+}
+
+@layer utilities {
+  .muted { color: var(--muted); }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

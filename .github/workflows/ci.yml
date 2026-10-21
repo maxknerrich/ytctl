@@ -28,3 +28,17 @@ jobs:
           path: |
             dist/ytctl-firefox-*.zip
             dist/ytctl-chrome-*.zip
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Ubuntu's AppArmor blocks the user namespaces Chrome's sandbox needs,
+      # and Chrome for Testing has no AppArmor profile of its own.
+      - run: echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+      - run: npm run test:e2e
