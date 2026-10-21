@@ -42,3 +42,4 @@ The same four screenshots go on the AMO listing (Developer Hub → Edit Product 
 - **Host permission (youtube.com):** The content script runs on YouTube to read the current video's creator and set the video's playback speed. The extension only reads and changes YouTube pages.
 - **Remote code:** No, the extension does not use remote code.
 - **Data usage:** No user data is collected or transmitted. Tick none of the data categories, then confirm all three certifications.
+- **Privacy policy URL:** https://github.com/maxknerrich/ytctl/blob/main/PRIVACY.md
